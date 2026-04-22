@@ -1,1 +1,0 @@
-void triangulate(int* A_k, int* b);
