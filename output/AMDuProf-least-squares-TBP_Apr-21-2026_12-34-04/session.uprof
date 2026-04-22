@@ -1,0 +1,366 @@
+{
+    "auxiliary": {
+        "availablePages": "3757 MB",
+        "availableRam": "1053 MB",
+        "availableVirtualMemory": "134213390 MB",
+        "cores": 12,
+        "cpuAgentCount": 0,
+        "cpuFamily": 23,
+        "cpuModel": 104,
+        "cpuModelName": "AMD Ryzen 5 5500U with Radeon Graphics",
+        "cpuTopology": [
+            [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                0,
+                1,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                0,
+                2,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                0,
+                3,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                0,
+                4,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                0,
+                5,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                1,
+                6,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                1,
+                7,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                1,
+                8,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                1,
+                9,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                1,
+                10,
+                0,
+                0,
+                0,
+                0
+            ],
+            [
+                1,
+                11,
+                0,
+                0,
+                0,
+                0
+            ]
+        ],
+        "eventColumnIds": [
+            {
+                "category": 1,
+                "categoryName": "CPU PROFILE",
+                "events": [
+                    {
+                        "callstack": true,
+                        "category": 1,
+                        "cmask": 0,
+                        "description": "CPU Time is the time in which the CPU core is executing the code.",
+                        "encodedId": 562949953478656,
+                        "eventCategory": 2,
+                        "expression": "",
+                        "fetchL3MissOnly": false,
+                        "frequency": 0,
+                        "hwEventId": 57344,
+                        "interval": 1,
+                        "invCmask": false,
+                        "isFrequencyMode": false,
+                        "isRawEvent": true,
+                        "isTimeSeriesData": true,
+                        "name": "CPU_TIME",
+                        "opDispatchedCount": false,
+                        "opL3MissOnly": false,
+                        "osMode": false,
+                        "samples": 0,
+                        "smcSource": 0,
+                        "threshold": 0,
+                        "traceMode": 0,
+                        "unit": "",
+                        "unitMask": 0,
+                        "usrMode": false
+                    }
+                ]
+            }
+        ],
+        "guest": false,
+        "guestKallsyms": "",
+        "guestKmodules": "",
+        "guestPid": 0,
+        "guestSymPaths": "",
+        "host": false,
+        "hypervisorEnabled": true,
+        "hypervisorVendor": "Microsoft Hyper-V",
+        "ibsIdentifiers": 0,
+        "ibsOpSampling": false,
+        "isCacheline": false,
+        "isFreqMode": false,
+        "issmtEnabled": true,
+        "onlineCores": 12,
+        "osName": "Win1125H2-64",
+        "p0Freq": 0,
+        "profScope": "Single Application",
+        "profiledPids": "28644;",
+        "totalPages": "20926 MB",
+        "totalRam": "7488 MB",
+        "totalVirtualMemory": "134217727 MB"
+    },
+    "categoriesCollected": [
+        "cpu"
+    ],
+    "collectCommand": "AMDuProfCLI.exe collect --config tbp -o C:\\universita\\Computer Architecture\\progetto\\Least-squares-algorithm-optimization-with-cpu-ang-gpu\\output C:\\universita\\Computer Architecture\\progetto\\Least-squares-algorithm-optimization-with-cpu-ang-gpu\\src\\least-squares.exe 1500 1200",
+    "collection": {
+        "branch-filter": 511,
+        "callstack": {
+            "callstackSize": 0,
+            "fpo": false,
+            "interval": 1,
+            "scope": 1,
+            "unwindDepth": 128
+        },
+        "customProfileEventMap": {
+            "keys": null,
+            "values": null
+        },
+        "dataBufferCount": 0,
+        "events": {
+            "configName": "Time-based Sampling",
+            "configType": 4,
+            "cpuTraceSourceMask": 0,
+            "ibsEvents": {
+                "cacheAnalysis": false,
+                "fetch": false,
+                "fetchCallstack": true,
+                "fetchInterval": 0,
+                "fetchL3Miss": false,
+                "loadStoreOnly": false,
+                "op": false,
+                "opCallstack": true,
+                "opCycleCount": false,
+                "opInterval": 0,
+                "opL3Miss": false,
+                "opLoadLatency": 0,
+                "randomize": true
+            },
+            "pmcEvents": null,
+            "predefinedProfileType": 3,
+            "samplingModeMask": 1,
+            "timerCallstack": true,
+            "timerInterval": 1.0,
+            "timerSamplingMode": 1
+        },
+        "flags": {
+            "collectSysModules": false,
+            "cssDefaultValues": false,
+            "defaultBranchAnalysis": false,
+            "hasCallstack": false,
+            "isThreadConcurrency": false,
+            "maxDataFileSize": 0,
+            "perEventCSSDefault": false,
+            "profileMpi": false,
+            "profileSamplinModeBpf": false,
+            "pythonTraceOptions": false,
+            "traceMpi": false,
+            "traceMpiMode": 0,
+            "traceOpenmp": false,
+            "traceOpenmpMode": 0,
+            "traceOpenmpType": 0
+        },
+        "globalFrequency": 0,
+        "globalSamplingInterval": 0,
+        "hostP0Freqs": [
+            {
+                "host": "LAPTOP-FU28N3ME",
+                "p0Freq": 2100.0
+            }
+        ],
+        "hotspotsProfilingSignal": -1,
+        "lbr": false,
+        "livePower": null,
+        "metadataSource": 0,
+        "mmapBuffer": 0,
+        "profileChildren": true,
+        "profileConfigFiles": [
+            "tbp"
+        ],
+        "schedule": {
+            "categoryDurations": [
+                {
+                    "category": 1,
+                    "categoryName": "CPU PROFILE",
+                    "end": 69602855444999,
+                    "start": 69596262401000,
+                    "type": 0
+                }
+            ],
+            "elapsed": 6593,
+            "end": 69602855444999,
+            "endTs": "Tue Apr 21 12:34:12 2026",
+            "hostDurations": [
+                {
+                    "end": 69602855444999,
+                    "host": "LAPTOP-FU28N3ME",
+                    "start": 69596262401000
+                }
+            ],
+            "profileCollectionDataLimitType": 0,
+            "profileDuration": 0,
+            "start": 69596262401000,
+            "startDelay": 0,
+            "startTs": "Tue Apr 21 12:34:05 2026",
+            "type": 2
+        },
+        "sessionVersion": 9,
+        "target": {
+            "appArgs": "1500 1200 ",
+            "coreAffinity": "FFF",
+            "coreMask": "FFF",
+            "gpuCollectAgentVersion": 0,
+            "gpuFamily": "",
+            "gpuRocprofVersion": 0,
+            "launchApp": "C:\\universita\\Computer Architecture\\progetto\\Least-squares-algorithm-optimization-with-cpu-ang-gpu\\src\\least-squares.exe",
+            "profileCores": false,
+            "systemWide": false,
+            "terminateApp": false,
+            "workingDir": "C:\\universita\\Computer Architecture\\progetto\\Least-squares-algorithm-optimization-with-cpu-ang-gpu\\src"
+        }
+    },
+    "deviceInfo": {
+        "keys": [
+            0
+        ],
+        "values": [
+            {
+                "keys": [
+                    0,
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7,
+                    8,
+                    9,
+                    10,
+                    11
+                ],
+                "values": [
+                    [
+                        0,
+                        2100000000
+                    ],
+                    [
+                        0,
+                        2100000000
+                    ],
+                    [
+                        0,
+                        2100000000
+                    ],
+                    [
+                        0,
+                        2100000000
+                    ],
+                    [
+                        0,
+                        2100000000
+                    ],
+                    [
+                        0,
+                        2100000000
+                    ],
+                    [
+                        0,
+                        2100000000
+                    ],
+                    [
+                        0,
+                        2100000000
+                    ],
+                    [
+                        0,
+                        2100000000
+                    ],
+                    [
+                        0,
+                        2100000000
+                    ],
+                    [
+                        0,
+                        2100000000
+                    ],
+                    [
+                        0,
+                        2100000000
+                    ]
+                ]
+            }
+        ]
+    },
+    "hpc": {
+        "hostName": "LAPTOP-FU28N3ME"
+    },
+    "profileType": 1,
+    "reportCommand": "",
+    "translateCommand": ""
+}

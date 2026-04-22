@@ -1,0 +1,1 @@
+least-squares.exe 1000 600

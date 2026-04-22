@@ -1,0 +1,30 @@
+
+"AMD uProf (Version:5.2.431.0)"
+PERFORMANCE ANALYSIS REPORT
+
+EXECUTION
+Target Path:,"C:\universita\Computer Architecture\progetto\Least-squares-algorithm-optimization-with-cpu-ang-gpu\src\least-squares.exe"
+Command Line Arguments:,"1000 500 "
+Working Directory:,"C:\universita\Computer Architecture\progetto\Least-squares-algorithm-optimization-with-cpu-ang-gpu\output"
+Environment Variables:
+CPU Details:,"Family(0x17), Model(0x68), Number of Cores(12)"
+Operating System:,"Win1125H2-64"
+Collect Command:,"AMDuProfCLI.exe collect --config hotspots -o C:\universita\Computer Architecture\progetto\Least-squares-algorithm-optimization-with-cpu-ang-gpu\output C:\universita\Computer Architecture\progetto\Least-squares-algorithm-optimization-with-cpu-ang-gpu\src\least-squares.exe 1000 500"
+Report Command:,"AMDuProfCLI.exe report -i C:\universita\Computer Architecture\progetto\Least-squares-algorithm-optimization-with-cpu-ang-gpu\output\AMDuProf-least-squares-Hotspots_Apr-21-2026_13-40-42"
+
+PROFILE DETAILS
+Profile Session Type:,"Hotspots"
+Profile Scope:,"Single Application"
+CPU Mask:,"0-11"
+CPU Affinity Mask:,"0-11"
+Profile Start Time:,"Tue Apr 21 13:40:43 2026"
+Profile End Time:,"Tue Apr 21 13:40:45 2026"
+Profile Duration:,"1.621 seconds"
+Data Folder:,"C:\universita\Computer Architecture\progetto\Least-squares-algorithm-optimization-with-cpu-ang-gpu\output\AMDuProf-least-squares-Hotspots_Apr-21-2026_13-40-42"
+Virtual Machine:,"Yes"
+Hypervisor Vendor:,"Microsoft Hyper-V"
+Call Stack Sampling:,"False"
+
+MONITORED EVENTS
+TBP Events:,Name,Interval,Description
+,"CPU_TIME","10.000 milliseconds","CPU Time is the time in which the CPU core is executing the code."
