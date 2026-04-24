@@ -6,14 +6,14 @@
 #include <sys/time.h>
 
 typedef struct {
-    double* R;
-    double* v;
+    float* R;
+    float* v;
     int M, k, N;
     int start_col, end_col;
 } thread_data_t;
 
-void compute_householder_vector(double* R, double* v, int k, int M, int N) {
-    double norm_x = 0.0;
+void compute_householder_vector(float* R, float* v, int k, int M, int N) {
+    float norm_x = 0.0;
     for (int i = k; i < M; i++) {
         norm_x += R[k * M + i] * R[k * M + i];
     }
@@ -22,14 +22,14 @@ void compute_householder_vector(double* R, double* v, int k, int M, int N) {
     // Inizializza v
     for (int i = 0; i < M; i++) v[i] = 0.0;
     
-    double alpha = (R[k * M + k] > 0) ? -norm_x : norm_x;
+    float alpha = (R[k * M + k] > 0) ? -norm_x : norm_x;
     v[k] = R[k * M + k] - alpha;
     
     for (int i = k + 1; i < M; i++) {
         v[i] = R[k * M + i];
     }
     
-    double norm_v = 0.0;
+    float norm_v = 0.0;
     for (int i = k; i < M; i++) {
         norm_v += v[i] * v[i];
     }
@@ -47,7 +47,7 @@ void compute_householder_vector(double* R, double* v, int k, int M, int N) {
     int M = data->M; // Prendi M per l'offset delle colonne
 
     for (int j = data->start_col; j < data->end_col; j++) {
-        double dot = 0.0;
+        float dot = 0.0;
         int col_offset = j * M; // Punto di inizio della colonna j
 
         // 1. Prodotto scalare (Accesso sequenziale = VELOCE)
@@ -55,7 +55,7 @@ void compute_householder_vector(double* R, double* v, int k, int M, int N) {
             dot += data->v[i] * data->R[col_offset + i];
         }
 
-        double scalar = 2.0 * dot;
+        float scalar = 2.0 * dot;
 
         // 2. Aggiornamento riga (Accesso sequenziale = VELOCE)
         for (int i = data->k; i < M; i++) {
@@ -69,17 +69,17 @@ void* update_columns_thread(void* arg) {
     thread_data_t* data = (thread_data_t*)arg;
     int M = data->M;
     int k = data->k;
-    double* v = data->v;
-    double* R = data->R;
+    float* v = data->v;
+    float* R = data->R;
 
     for (int j = data->start_col; j < data->end_col; j++) {
-        double dot = 0.0;
+        float dot = 0.0;
         int col_offset = j * M;
 
         // --- 1. PRODOTTO SCALARE CON LOOP UNROLLING (Fattore 4) ---
         int i = k;
         // accumulatori separati per rompere le dipendenze seriali
-        double acc1 = 0.0, acc2 = 0.0, acc3 = 0.0, acc4 = 0.0;
+        float acc1 = 0.0, acc2 = 0.0, acc3 = 0.0, acc4 = 0.0;
 
         for (; i <= M - 4; i += 4) {
             acc1 += v[i]   * R[col_offset + i];
@@ -94,7 +94,7 @@ void* update_columns_thread(void* arg) {
             dot += v[i] * R[col_offset + i];
         }
 
-        double scalar = 2.0 * dot;
+        float scalar = 2.0 * dot;
 
         // --- 2. AGGIORNAMENTO COLONNA CON LOOP UNROLLING ---
         i = k;
@@ -114,8 +114,8 @@ void* update_columns_thread(void* arg) {
 }
 
 
-void apply_householder_to_vector(double* v, double* y, int k, int M) {
-    double doty = 0.0;
+void apply_householder_to_vector(float* v, float* y, int k, int M) {
+    float doty = 0.0;
     for (int i = k; i < M; i++) {
         doty += v[i] * y[i];   
     }
@@ -127,7 +127,7 @@ void apply_householder_to_vector(double* v, double* y, int k, int M) {
 // =========================
 // back substitution Rx = y
 // =========================
-void back_substitution(double* R, double* y, double* x, int N, int M) {
+void back_substitution(float* R, float* y, float* x, int N, int M) {
     for (int i = N - 1; i >= 0; i--) {
         x[i] = 0.0;
         for (int j = i + 1; j < N; j++) {
@@ -141,12 +141,12 @@ void back_substitution(double* R, double* y, double* x, int N, int M) {
     }
 }
 
-void qr_factorization(double* R, double* y, int, int, int);
+void qr_factorization(float* R, float* y, int, int, int);
 
-void least_squares(double* A, double* b, double* x, int M, int N, int Nthreads) {
+void least_squares(float* A, float* b, float* x, int M, int N, int Nthreads) {
 
-    double* R = malloc(M * N * sizeof(double));
-    double* y = malloc(M * sizeof(double));
+    float* R = malloc(M * N * sizeof(float));
+    float* y = malloc(M * sizeof(float));
 
     for (int i = 0; i < M; i++){
         for (int j = 0; j < N; j++){
@@ -168,10 +168,10 @@ void least_squares(double* A, double* b, double* x, int M, int N, int Nthreads) 
     free(y);
 }
 
-void qr_factorization(double* R, double* y, int M, int N, int Nthreads){
+void qr_factorization(float* R, float* y, int M, int N, int Nthreads){
     pthread_t threads[Nthreads];
     thread_data_t t_data[Nthreads];
-    double* v = malloc(M * sizeof(double));
+    float* v = malloc(M * sizeof(float));
 
     for(int k = 0; k < N && k < M;k++){
         
@@ -226,16 +226,16 @@ int main(int argc, char* argv[]) {
     srand(time(NULL));
 
 
-    double *A = malloc(M * N * sizeof(double));
+    float *A = malloc(M * N * sizeof(float));
 
     for (int i = 0; i < M * N; i++){
         A[i] = rand() % 100 + 1;
     }
-    double *b = malloc(M * sizeof(double));
+    float *b = malloc(M * sizeof(float));
     for(int i = 0; i < M;i++){
         b[i] = rand() % 100 + 1;
     }
-    double *x = malloc(N * sizeof(double));
+    float *x = malloc(N * sizeof(float));
 
     least_squares(A, b, x, M, N, Nthreads);
         
@@ -244,7 +244,7 @@ int main(int argc, char* argv[]) {
 */
     
     gettimeofday(&end, NULL);
-    double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
+    float elapsed = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
 
     printf("Ultimo x: %f\n", x[N-1]);
     printf("Tempo di esecuzione reale: %5.6f s\n", elapsed);
