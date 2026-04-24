@@ -95,7 +95,7 @@ void qr_factorization(double* R, double* y, int, int, int);
 
 void least_squares(double** A, double* b, double* x, int M, int N, int Nthreads) {
 
-    double* R = malloc(M * N * sizeof(double*));
+    double* R = malloc(M * N * sizeof(double));
     double* y = malloc(M * sizeof(double));
 
     for (int i = 0; i < M; i++){
