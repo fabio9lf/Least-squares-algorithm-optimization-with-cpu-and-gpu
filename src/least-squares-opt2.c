@@ -41,7 +41,7 @@ void compute_householder_vector(double* R, double* v, int k, int M, int N) {
     }
 }
 
-void* update_columns_thread(void* arg) {
+/*void* update_columns_thread(void* arg) {
     thread_data_t* data = (thread_data_t*)arg;
     int M = data->M; // Prendi M per l'offset delle colonne
 
@@ -62,7 +62,56 @@ void* update_columns_thread(void* arg) {
         }
     }
     return NULL;
+}*/
+// con loop unrolling
+void* update_columns_thread(void* arg) {
+    thread_data_t* data = (thread_data_t*)arg;
+    int M = data->M;
+    int k = data->k;
+    double* v = data->v;
+    double* R = data->R;
+
+    for (int j = data->start_col; j < data->end_col; j++) {
+        double dot = 0.0;
+        int col_offset = j * M;
+
+        // --- 1. PRODOTTO SCALARE CON LOOP UNROLLING (Fattore 4) ---
+        int i = k;
+        // accumulatori separati per rompere le dipendenze seriali
+        double acc1 = 0.0, acc2 = 0.0, acc3 = 0.0, acc4 = 0.0;
+
+        for (; i <= M - 4; i += 4) {
+            acc1 += v[i]   * R[col_offset + i];
+            acc2 += v[i+1] * R[col_offset + i+1];
+            acc3 += v[i+2] * R[col_offset + i+2];
+            acc4 += v[i+3] * R[col_offset + i+3];
+        }
+        dot = (acc1 + acc2) + (acc3 + acc4);
+
+        // Gestione dei rimanenti elementi (se M-k non è multiplo di 4)
+        for (; i < M; i++) {
+            dot += v[i] * R[col_offset + i];
+        }
+
+        double scalar = 2.0 * dot;
+
+        // --- 2. AGGIORNAMENTO COLONNA CON LOOP UNROLLING ---
+        i = k;
+        for (; i <= M - 4; i += 4) {
+            R[col_offset + i]   -= v[i]   * scalar;
+            R[col_offset + i+1] -= v[i+1] * scalar;
+            R[col_offset + i+2] -= v[i+2] * scalar;
+            R[col_offset + i+3] -= v[i+3] * scalar;
+        }
+        
+        // Gestione dei rimanenti elementi
+        for (; i < M; i++) {
+            R[col_offset + i] -= v[i] * scalar;
+        }
+    }
+    return NULL;
 }
+
 
 void apply_householder_to_vector(double* v, double* y, int k, int M) {
     double doty = 0.0;
@@ -93,14 +142,14 @@ void back_substitution(double* R, double* y, double* x, int N, int M) {
 
 void qr_factorization(double* R, double* y, int, int, int);
 
-void least_squares(double** A, double* b, double* x, int M, int N, int Nthreads) {
+void least_squares(double* A, double* b, double* x, int M, int N, int Nthreads) {
 
     double* R = malloc(M * N * sizeof(double));
     double* y = malloc(M * sizeof(double));
 
     for (int i = 0; i < M; i++){
         for (int j = 0; j < N; j++){
-            R[j * M + i] = A[i][j];
+            R[j * M + i] = A[j * M + i];
         }
     }
 
@@ -175,13 +224,10 @@ int main(int argc, char* argv[]) {
     srand(time(NULL));
 
 
-    double **A = malloc(M * sizeof(double*));
+    double *A = malloc(M * N * sizeof(double));
 
-    for (int i = 0; i < M; i++){
-        A[i] = malloc(N * sizeof(double));
-        for(int j = 0; j < N; j++){
-            A[i][j] = rand() % 100 + 1;
-        }
+    for (int i = 0; i < M * N; i++){
+        A[i] = rand() % 100 + 1;
     }
     double *b = malloc(M * sizeof(double));
     for(int i = 0; i < M;i++){
@@ -196,9 +242,7 @@ int main(int argc, char* argv[]) {
 
     free(b);
     free(x);
-    for(int i = 0; i < M; i++){
-        free(A[i]);
-    }
+    
     free(A);
 
     clock_t end = clock();
