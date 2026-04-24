@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <pthread.h>
+#include <sys/time.h>
 
 typedef struct {
     double* R;
@@ -201,8 +202,9 @@ void qr_factorization(double* R, double* y, int M, int N, int Nthreads){
 }
 
 int main(int argc, char* argv[]) {
-    clock_t start = clock();
-
+  //  clock_t start = clock();
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
     int M = 0, N = 0, Nthreads = 1;
 
     if(argc == 1 || argc == 2){
@@ -237,17 +239,21 @@ int main(int argc, char* argv[]) {
 
     least_squares(A, b, x, M, N, Nthreads);
         
-    for (int i = 0; i < N; i++)
+    /*for (int i = 0; i < N; i++)
         printf("%f\n", x[i]);
+*/
+    
+    gettimeofday(&end, NULL);
+    double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
 
+    printf("Ultimo x: %f\n", x[N-1]);
+    printf("Tempo di esecuzione reale: %5.6f s\n", elapsed);
+
+    
     free(b);
     free(x);
     
     free(A);
 
-    clock_t end = clock();
-
-    double time = (double)((end - start)/CLOCKS_PER_SEC);
-    printf("tempo di esecuzione: %5.6f", time);
     return 0;
 }
