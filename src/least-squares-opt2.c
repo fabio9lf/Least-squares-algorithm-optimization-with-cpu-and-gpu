@@ -3,33 +3,38 @@
 #include <stdlib.h>
 #include <time.h>
 #include <pthread.h>
-#include <sys/time.h>
 
+// Struttura dati per i thread
 typedef struct {
-    float* R;
-    float* v;
-    int M, k, N;
-    int start_col, end_col;
+    double* R;      // OTTIMIZZAZIONE 2: Ora R è un puntatore singolo (Array 1D)
+    double* y;
+    double* v;
+    int M, N;
+    int n_threads;
+    int thread_id;
+    pthread_barrier_t* barrier;
 } thread_data_t;
 
-void compute_householder_vector(float* R, float* v, int k, int M, int N) {
-    float norm_x = 0.0;
+// Funzione sequenziale per il vettore di Householder
+void compute_householder_vector(double* R, double* v, int k, int M, int N) {
+    double norm_x = 0.0;
     for (int i = k; i < M; i++) {
-        norm_x += R[k * M + i] * R[k * M + i];
+        // Accesso 1D: Riga 'i', Colonna 'k' diventa 'i * N + k'
+        double val = R[i * N + k];
+        norm_x += val * val;
     }
     norm_x = sqrt(norm_x);
     
-    // Inizializza v
     for (int i = 0; i < M; i++) v[i] = 0.0;
     
-    float alpha = (R[k * M + k] > 0) ? -norm_x : norm_x;
-    v[k] = R[k * M + k] - alpha;
+    double alpha = (R[k * N + k] > 0) ? -norm_x : norm_x;
+    v[k] = R[k * N + k] - alpha;
     
     for (int i = k + 1; i < M; i++) {
-        v[i] = R[k * M + i];
+        v[i] = R[i * N + k];
     }
     
-    float norm_v = 0.0;
+    double norm_v = 0.0;
     for (int i = k; i < M; i++) {
         norm_v += v[i] * v[i];
     }
@@ -42,218 +47,172 @@ void compute_householder_vector(float* R, float* v, int k, int M, int N) {
     }
 }
 
-/*void* update_columns_thread(void* arg) {
-    thread_data_t* data = (thread_data_t*)arg;
-    int M = data->M; // Prendi M per l'offset delle colonne
-
-    for (int j = data->start_col; j < data->end_col; j++) {
-        float dot = 0.0;
-        int col_offset = j * M; // Punto di inizio della colonna j
-
-        // 1. Prodotto scalare (Accesso sequenziale = VELOCE)
-        for (int i = data->k; i < M; i++) {
-            dot += data->v[i] * data->R[col_offset + i];
-        }
-
-        float scalar = 2.0 * dot;
-
-        // 2. Aggiornamento riga (Accesso sequenziale = VELOCE)
-        for (int i = data->k; i < M; i++) {
-            data->R[col_offset + i] -= data->v[i] * scalar;
-        }
-    }
-    return NULL;
-}*/
-// con loop unrolling
-void* update_columns_thread(void* arg) {
+// Funzione parallela dei thread
+void* qr_worker(void* arg) {
     thread_data_t* data = (thread_data_t*)arg;
     int M = data->M;
-    int k = data->k;
-    float* v = data->v;
-    float* R = data->R;
+    int N = data->N;
 
-    for (int j = data->start_col; j < data->end_col; j++) {
-        float dot = 0.0;
-        int col_offset = j * M;
+    // Alloca un array locale per immagazzinare i dot-product di tutte le colonne di questo thread.
+    // Viene allocato una sola volta per thread, fuori dal ciclo.
+    double* local_dots = (double*)malloc(N * sizeof(double));
 
-        // --- 1. PRODOTTO SCALARE CON LOOP UNROLLING (Fattore 4) ---
-        int i = k;
-        // accumulatori separati per rompere le dipendenze seriali
-        float acc1 = 0.0, acc2 = 0.0, acc3 = 0.0, acc4 = 0.0;
-
-        for (; i <= M - 4; i += 4) {
-            acc1 += v[i]   * R[col_offset + i];
-            acc2 += v[i+1] * R[col_offset + i+1];
-            acc3 += v[i+2] * R[col_offset + i+2];
-            acc4 += v[i+3] * R[col_offset + i+3];
-        }
-        dot = (acc1 + acc2) + (acc3 + acc4);
-
-        // Gestione dei rimanenti elementi (se M-k non è multiplo di 4)
-        for (; i < M; i++) {
-            dot += v[i] * R[col_offset + i];
-        }
-
-        float scalar = 2.0 * dot;
-
-        // --- 2. AGGIORNAMENTO COLONNA CON LOOP UNROLLING ---
-        i = k;
-        for (; i <= M - 4; i += 4) {
-            R[col_offset + i]   -= v[i]   * scalar;
-            R[col_offset + i+1] -= v[i+1] * scalar;
-            R[col_offset + i+2] -= v[i+2] * scalar;
-            R[col_offset + i+3] -= v[i+3] * scalar;
-        }
+    for (int k = 0; k < N && k < M; k++) {
         
-        // Gestione dei rimanenti elementi
-        for (; i < M; i++) {
-            R[col_offset + i] -= v[i] * scalar;
+        // 1. Solo il thread 0 calcola il vettore di Householder
+        if (data->thread_id == 0) {
+            compute_householder_vector(data->R, data->v, k, M, N);
         }
+
+        // BARRIERA: Tutti i thread aspettano il thread 0
+        pthread_barrier_wait(data->barrier);
+
+        // 2. Divisione del lavoro
+        int cols_to_process = N - (k + 1);
+        if (cols_to_process > 0) {
+            int chunk = (cols_to_process + data->n_threads - 1) / data->n_threads;
+            int start_col = (k + 1) + data->thread_id * chunk;
+            int end_col = start_col + chunk;
+            if (end_col > N) end_col = N;
+
+            int n_cols = end_col - start_col;
+            
+            if (n_cols > 0) {
+                // Azzera l'array dei dot-product per questo step
+                for(int j = 0; j < n_cols; j++) local_dots[j] = 0.0;
+
+                // OTTIMIZZAZIONE 1: Calcolo Dot-Product scorrendo PER RIGHE (Cache Locality)
+                for (int i = k; i < M; i++) {
+                    double vi = data->v[i];
+                    int row_offset = i * N; // Pre-calcola l'inizio della riga
+                    
+                    // Il ciclo interno scorre 'j'. La CPU legge la memoria in modo perfettamente sequenziale!
+                    for (int j = 0; j < n_cols; j++) {
+                        local_dots[j] += vi * data->R[row_offset + start_col + j];
+                    }
+                }
+
+                // OTTIMIZZAZIONE 1: Aggiornamento Matrice scorrendo PER RIGHE
+                for (int i = k; i < M; i++) {
+                    double vi = data->v[i];
+                    int row_offset = i * N;
+                    for (int j = 0; j < n_cols; j++) {
+                        data->R[row_offset + start_col + j] -= 2.0 * vi * local_dots[j];
+                    }
+                }
+            }
+        }
+
+        // 3. Il thread 0 aggiorna il vettore 'y'
+        if (data->thread_id == 0) {
+            double doty = 0.0;
+            for (int i = k; i < M; i++) {
+                doty += data->v[i] * data->y[i];   
+            }
+            for (int i = k; i < M; i++) {
+                data->y[i] -= 2.0 * data->v[i] * doty;
+            }
+        }
+
+        // BARRIERA: Tutti devono finire lo step k
+        pthread_barrier_wait(data->barrier);
     }
+    
+    free(local_dots); // Pulizia memoria thread-local
     return NULL;
 }
 
-
-void apply_householder_to_vector(float* v, float* y, int k, int M) {
-    float doty = 0.0;
-    for (int i = k; i < M; i++) {
-        doty += v[i] * y[i];   
-    }
-    for (int i = k; i < M; i++) {
-        y[i] -= 2.0 * v[i] * doty;
-    }
-}
-
-// =========================
-// back substitution Rx = y
-// =========================
-void back_substitution(float* R, float* y, float* x, int N, int M) {
+// Back Substitution adattata per Array 1D
+void back_substitution(double* R, double* y, double* x, int N) {
     for (int i = N - 1; i >= 0; i--) {
         x[i] = 0.0;
+        int row_offset = i * N;
         for (int j = i + 1; j < N; j++) {
-            x[i] += R[j * M + i] * x[j];
+            x[i] += R[row_offset + j] * x[j];
         }
-        if (fabs(R[i * M + i]) > 1e-12) {
-            x[i] = (y[i] - x[i]) / R[i * M + i];
+        if (fabs(R[row_offset + i]) > 1e-12) {
+            x[i] = (y[i] - x[i]) / R[row_offset + i];
         } else {
             x[i] = 0.0; 
         }
     }
 }
 
-void qr_factorization(float* R, float* y, int, int, int);
-
-void least_squares(float* A, float* b, float* x, int M, int N, int Nthreads) {
-
-    float* R = malloc(M * N * sizeof(float));
-    float* y = malloc(M * sizeof(float));
-
-    for (int i = 0; i < M; i++){
-        for (int j = 0; j < N; j++){
-            R[j * M + i] = A[j * M + i];
-        }
-    }
-
-    for (int i = 0; i < M; i++)
-        y[i] = b[i];
-
-    // =========================
-    // QR con Householder
-    // =========================
-    qr_factorization(R, y, M, N, Nthreads);
+void least_squares_parallel(double* A, double* b, double* x, int M, int N, int n_threads) {
+    // Allocazione contigua (Array 1D) al posto della 2D
+    double* R = malloc(M * N * sizeof(double));
+    double* y = malloc(M * sizeof(double));
+    double* v = malloc(M * sizeof(double));
     
-    back_substitution(R, y, x, N, M);
-
-    free(R);
-    free(y);
-}
-
-void qr_factorization(float* R, float* y, int M, int N, int Nthreads){
-    pthread_t threads[Nthreads];
-    thread_data_t t_data[Nthreads];
-    float* v = malloc(M * sizeof(float));
-
-    for(int k = 0; k < N && k < M;k++){
-        
-        compute_householder_vector(R, v, k, M, N);
-
-        int cols_to_process = N - k;
-        int cols_per_thread = cols_to_process / Nthreads;
-
-        for (int t = 0; t < Nthreads; t++) {
-            t_data[t].R = R;
-            t_data[t].v = v;
-            t_data[t].k = k;
-            t_data[t].M = M;
-            t_data[t].N = N;
-            t_data[t].start_col = k + t * cols_per_thread;
-            t_data[t].end_col = (t == Nthreads - 1) ? N : k + (t + 1) * cols_per_thread;
-            
-            pthread_create(&threads[t], NULL, update_columns_thread, &t_data[t]);
+    // Copia i dati
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < N; j++) {
+            R[i * N + j] = A[i * N + j];
         }
-
-        for (int t = 0; t < Nthreads; t++) {
-            pthread_join(threads[t], NULL);
-        }
-        
-        apply_householder_to_vector(v, y, k, M);
+        y[i] = b[i];
     }
-    free(v);
+
+    pthread_t threads[n_threads];
+    thread_data_t t_data[n_threads];
+    pthread_barrier_t barrier;
+
+    pthread_barrier_init(&barrier, NULL, n_threads);
+
+    for (int t = 0; t < n_threads; t++) {
+        t_data[t].R = R;
+        t_data[t].y = y;
+        t_data[t].v = v;
+        t_data[t].M = M;
+        t_data[t].N = N;
+        t_data[t].n_threads = n_threads;
+        t_data[t].thread_id = t;
+        t_data[t].barrier = &barrier;
+        pthread_create(&threads[t], NULL, qr_worker, &t_data[t]);
+    }
+
+    for (int t = 0; t < n_threads; t++) {
+        pthread_join(threads[t], NULL);
+    }
+
+    back_substitution(R, y, x, N);
+
+    pthread_barrier_destroy(&barrier);
+    free(R); free(y); free(v);
 }
 
 int main(int argc, char* argv[]) {
-  //  clock_t start = clock();
-    struct timeval start, end;
-    gettimeofday(&start, NULL);
-    int M = 0, N = 0, Nthreads = 1;
-
-    if(argc == 1 || argc == 2){
-        printf("Devi passare la dimensione della matrice!");
-        exit(1);
+    if(argc < 3){
+        printf("Utilizzo: %s M N [n_threads]\n", argv[0]);
+        return 1;
     }
-    if(argc == 4){
-        Nthreads = atoi(argv[3]);
-    }
-    M = atoi(argv[1]);
-    N = atoi(argv[2]);
+    int M = atoi(argv[1]);
+    int N = atoi(argv[2]);
+    int n_threads = (argc == 4) ? atoi(argv[3]) : 1;
 
-    if(N >= M){
-        printf("M deve essere maggiore di N!");
-        exit(1);
-    }
-
-
-    srand(time(NULL));
-
-
-    float *A = malloc(M * N * sizeof(float));
-
-    for (int i = 0; i < M * N; i++){
-        A[i] = rand() % 100 + 1;
-    }
-    float *b = malloc(M * sizeof(float));
-    for(int i = 0; i < M;i++){
-        b[i] = rand() % 100 + 1;
-    }
-    float *x = malloc(N * sizeof(float));
-
-    least_squares(A, b, x, M, N, Nthreads);
-        
-    /*for (int i = 0; i < N; i++)
-        printf("%f\n", x[i]);
-*/
+    struct timespec start, end;
     
-    gettimeofday(&end, NULL);
-    float elapsed = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
-
-    printf("Ultimo x: %f\n", x[N-1]);
-    printf("Tempo di esecuzione reale: %5.6f s\n", elapsed);
-
+    // Inizializzazione della matrice A come Array 1D contiguo
+    double *A = malloc(M * N * sizeof(double));
+    for (int i = 0; i < M; i++) {
+        for(int j = 0; j < N; j++) {
+            A[i * N + j] = rand() % 100 + 1;
+        }
+    }
     
-    free(b);
-    free(x);
+    double *b = malloc(M * sizeof(double));
+    for(int i = 0; i < M; i++) b[i] = rand() % 100 + 1;
     
-    free(A);
+    double *x = malloc(N * sizeof(double));
 
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
+    least_squares_parallel(A, b, x, M, N, n_threads);
+
+    clock_gettime(CLOCK_MONOTONIC, &end);
+
+    double time_taken = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+    printf("Thread: %d | Tempo: %5.6f s\n", n_threads, time_taken);
+
+    free(A); free(b); free(x);
     return 0;
 }
