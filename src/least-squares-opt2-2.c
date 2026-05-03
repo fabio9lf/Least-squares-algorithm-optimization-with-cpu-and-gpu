@@ -12,11 +12,12 @@
 #define MAT(data, i, j, M)  (data)[(i) + (j)*(M)]
 
 
+
 // ─────────────────────────────────────────────
 //  Struttura condivisa dal thread pool
 // ─────────────────────────────────────────────
 typedef struct {
-    double* R;           // array piatto M*N, column-major
+    double* R;           
     double* v;
     int     M, N;
 
@@ -31,6 +32,9 @@ typedef struct {
 
     volatile int stop;
 } pool_thread_data_t;
+
+
+struct timespec ts_start, ts_end;
 
 
 // ─────────────────────────────────────────────
@@ -164,6 +168,8 @@ void qr_factorization(double* R, double* y, int M, int N, int Nthreads) {
     for (int t = 0; t < workers; t++)
         pthread_create(&threads[t], NULL, pool_worker, &t_data[t + 1]);
 
+
+    clock_gettime(CLOCK_MONOTONIC, &ts_start);
     // ── Main lavora come thread 0 ─────────────────────────────
     for (int k = 0; k < N && k < M; k++) {
 
@@ -195,7 +201,8 @@ void qr_factorization(double* R, double* y, int M, int N, int Nthreads) {
                     col[i] -= 2.0 * v[k + i] * dot;
             }
         }
-
+        
+        clock_gettime(CLOCK_MONOTONIC, &ts_end);
         pthread_barrier_wait(b_end);
 
         apply_householder_to_vector(v, y, k, M);
@@ -238,8 +245,8 @@ void least_squares(double* A, double* b, double* x, int M, int N, int Nthreads) 
 //  main
 // ─────────────────────────────────────────────
 int main(int argc, char* argv[]) {
-    struct timespec ts_start, ts_end;
-    clock_gettime(CLOCK_MONOTONIC, &ts_start);
+    
+    
 
     if (argc < 3) {
         fprintf(stderr, "Uso: %s M N [Nthreads]\n", argv[0]);
@@ -274,7 +281,6 @@ int main(int argc, char* argv[]) {
 
     free(A); free(b); free(x);
 
-    clock_gettime(CLOCK_MONOTONIC, &ts_end);
     double elapsed = (ts_end.tv_sec  - ts_start.tv_sec)
                    + (ts_end.tv_nsec - ts_start.tv_nsec) * 1e-9;
     printf("tempo di esecuzione: %.6f s\n", elapsed);

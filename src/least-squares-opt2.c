@@ -12,6 +12,8 @@ typedef struct {
     int start_col, end_col;
 } thread_data_t;
 
+struct timeval start, end;
+
 void compute_householder_vector(float* R, float* v, int k, int M, int N) {
     float norm_x = 0.0;
     for (int i = k; i < M; i++) {
@@ -189,6 +191,7 @@ void qr_factorization(float* R, float* y, int M, int N, int Nthreads){
             t_data[t].start_col = k + t * cols_per_thread;
             t_data[t].end_col = (t == Nthreads - 1) ? N : k + (t + 1) * cols_per_thread;
             
+            
             pthread_create(&threads[t], NULL, update_columns_thread, &t_data[t]);
         }
 
@@ -204,7 +207,6 @@ void qr_factorization(float* R, float* y, int M, int N, int Nthreads){
 int main(int argc, char* argv[]) {
   //  clock_t start = clock();
     struct timeval start, end;
-    gettimeofday(&start, NULL);
     int M = 0, N = 0, Nthreads = 1;
 
     if(argc == 1 || argc == 2){

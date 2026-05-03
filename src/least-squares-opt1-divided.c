@@ -104,7 +104,10 @@ void least_squares(double** A, double* b, double* x, int M, int N, int Nthreads)
     // =========================
     // QR con Householder
     // =========================
+    
+    
     qr_factorization(R, y, M, N, Nthreads);
+    
     
     back_substitution(R, y, x, N);
 
@@ -118,7 +121,9 @@ void qr_factorization(double** R, double* y, int M, int N, int Nthreads){
     pthread_t threads[Nthreads];
     thread_data_t t_data[Nthreads];
     double* v = malloc(M * sizeof(double));
-
+    double elapsed;
+    struct timespec ts_start, ts_end;
+    clock_gettime(CLOCK_MONOTONIC, &ts_start);
     for(int k = 0; k < N && k < M;k++){
         
         compute_householder_vector(R, v, k, M);
@@ -141,14 +146,18 @@ void qr_factorization(double** R, double* y, int M, int N, int Nthreads){
             pthread_join(threads[t], NULL);
         }
         
+        clock_gettime(CLOCK_MONOTONIC, &ts_end);
+        elapsed = (ts_end.tv_sec  - ts_start.tv_sec)
+                    + (ts_end.tv_nsec - ts_start.tv_nsec) * 1e-9;
+
         apply_householder_to_vector(v, y, k, M);
     }
+
+    printf("Tempo di esecuzione: %5.6f", elapsed);
     free(v);
 }
 
 int main(int argc, char* argv[]) {
-    clock_t start = clock();
-
     int M = 0, N = 0, Nthreads = 1;
 
     if(argc == 1 || argc == 2){
@@ -184,10 +193,11 @@ int main(int argc, char* argv[]) {
     }
     double *x = malloc(N * sizeof(double));
 
+    
     least_squares(A, b, x, M, N, Nthreads);
-        
+        /*
     for (int i = 0; i < N; i++)
-        printf("%f\n", x[i]);
+        printf("%f\n", x[i]);*/
 
     free(b);
     free(x);
@@ -196,9 +206,5 @@ int main(int argc, char* argv[]) {
     }
     free(A);
 
-    clock_t end = clock();
-
-    double time = (double)((end - start)/CLOCKS_PER_SEC);
-    printf("tempo di esecuzione: %5.6f", time);
     return 0;
 }
