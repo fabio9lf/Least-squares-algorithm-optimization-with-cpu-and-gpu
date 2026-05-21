@@ -42,81 +42,55 @@ OTTIMIZZAZIONI IMPLEMENTATE (IMPORTANTI):
 
 ====================================================================
 */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda_runtime.h>
 
-#define TILE 32
+#define THREADS 32
 #define CHUNK 4096
 
-#define IDX(i,j,N) ((i)*(N)+(j))
-
 #define CUDA_CHECK(x) \
-if(x != cudaSuccess){ \
+if((x) != cudaSuccess){ \
     printf("CUDA ERROR: %s\n", cudaGetErrorString(x)); \
     exit(1); \
 }
 
 // ============================================================
-// KERNEL AtA (tiled + shared memory + symmetry)
+// AtA kernel
 // ============================================================
 __global__
 void AtA_kernel(
-    const float *__restrict__ A,   // OPT: restrict → better compiler scheduling
+    const float *__restrict__ A,
     double *__restrict__ AtA,
     int M,
     int N
 ){
-    // OPT 5: shared memory → reduces global memory bandwidth
-    __shared__ float sA[TILE][TILE];
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-    int row = blockIdx.y * TILE + threadIdx.y;
-    int col = blockIdx.x * TILE + threadIdx.x;
+    if(row >= N || col >= N)
+        return;
 
-    if(row >= N || col >= N) return;
-
-    // OPT 6: symmetry → compute only upper triangle
-    if(col < row) return;
+    if(col < row)
+        return;
 
     double sum = 0.0;
 
-    for(int t=0; t<M; t+=TILE){
-
-        int k = t + threadIdx.y;
-
-        // OPT 5: coalesced load into shared memory
-        sA[threadIdx.y][threadIdx.x] =
-            (k < M) ? A[k*N + row] : 0.0f;
-
-        __syncthreads();
-
-        // OPT 8: loop unrolling (manual)
-        for(int i=0;i<TILE;i++){
-
-            int kk = t + i;
-
-            if(kk < M){
-
-                // OPT 4: FP32 load → FP64 accumulate
-                sum +=
-                    (double)sA[i][threadIdx.y] *
-                    (double)A[kk*N + col];
-            }
-        }
-
-        __syncthreads();
+    for(int k=0;k<M;k++){
+        sum +=
+            (double)A[k*N + row] *
+            (double)A[k*N + col];
     }
 
-    AtA[row*N + col] = sum;
+    atomicAdd(&AtA[row*N + col], sum);
 
-    // OPT 6: symmetry write-back
-    if(row != col)
-        AtA[col*N + row] = sum;
+    if(row != col){
+        atomicAdd(&AtA[col*N + row], sum);
+    }
 }
 
 // ============================================================
-// KERNEL Atb (vector dot product optimized)
+// Atb kernel
 // ============================================================
 __global__
 void Atb_kernel(
@@ -128,36 +102,51 @@ void Atb_kernel(
 ){
     int row = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if(row >= N) return;
+    if(row >= N)
+        return;
 
-    float sum = 0.0f;
+    double sum = 0.0;
 
-    // OPT 7: coalesced sequential access
     #pragma unroll 4
     for(int k=0;k<M;k++){
-        sum += A[k*N + row] * b[k];
+        sum +=
+            (double)A[k*N + row] *
+            (double)b[k];
     }
 
-    Atb[row] = (double)sum;
+    atomicAdd(&Atb[row], sum);
 }
 
 // ============================================================
-// MAIN STREAMING PIPELINE
+// MAIN
 // ============================================================
 int main(int argc, char **argv){
 
+    if(argc < 4){
+        printf("Usage: %s M N NUM_BLOCKS\n", argv[0]);
+        return 1;
+    }
+
     int M = atoi(argv[1]);
     int N = atoi(argv[2]);
+    int NUM_BLOCKS = atoi(argv[3]);
 
-    int chunks = (M + CHUNK - 1)/CHUNK;
+    int chunks = (M + CHUNK - 1) / CHUNK;
 
+    printf("M = %d\n", M);
+    printf("N = %d\n", N);
     printf("Chunks = %d\n", chunks);
+    printf("CUDA blocks = %d\n", NUM_BLOCKS);
+    printf("Threads per block = %d\n", THREADS);
 
     // ========================================================
-    // HOST MEMORY
+    // PINNED HOST MEMORY
     // ========================================================
-    float *A = (float*)malloc(M*N*sizeof(float));
-    float *b = (float*)malloc(M*sizeof(float));
+    float *A;
+    float *b;
+
+    CUDA_CHECK(cudaMallocHost(&A, M*N*sizeof(float)));
+    CUDA_CHECK(cudaMallocHost(&b, M*sizeof(float)));
 
     double *AtA = (double*)calloc(N*N,sizeof(double));
     double *Atb = (double*)calloc(N,sizeof(double));
@@ -166,17 +155,20 @@ int main(int argc, char **argv){
     // INIT
     // ========================================================
     for(int i=0;i<M;i++){
-        b[i] = rand()%10 + 1;
+
+        b[i] = (float)(rand()%10 + 1);
+
         for(int j=0;j<N;j++){
-            A[i*N+j] = rand()%10 + 1;
+            A[i*N+j] = (float)(rand()%10 + 1);
         }
     }
 
     // ========================================================
-    // DEVICE DOUBLE BUFFERING
+    // DEVICE MEMORY
     // ========================================================
-    float *d_A[2]; // OPT 2: double buffer
+    float *d_A[2];
     float *d_b;
+
     double *d_AtA;
     double *d_Atb;
 
@@ -184,78 +176,129 @@ int main(int argc, char **argv){
     CUDA_CHECK(cudaMalloc(&d_A[1], CHUNK*N*sizeof(float)));
 
     CUDA_CHECK(cudaMalloc(&d_b, M*sizeof(float)));
+
     CUDA_CHECK(cudaMalloc(&d_AtA, N*N*sizeof(double)));
     CUDA_CHECK(cudaMalloc(&d_Atb, N*sizeof(double)));
 
-    CUDA_CHECK(cudaMemcpy(d_b,b,M*sizeof(float),cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemset(d_AtA, 0, N*N*sizeof(double)));
+    CUDA_CHECK(cudaMemset(d_Atb, 0, N*sizeof(double)));
 
+    CUDA_CHECK(cudaMemcpy(
+        d_b,
+        b,
+        M*sizeof(float),
+        cudaMemcpyHostToDevice
+    ));
+
+    // ========================================================
+    // STREAMS
+    // ========================================================
     cudaStream_t s0, s1;
+
     cudaStreamCreate(&s0);
     cudaStreamCreate(&s1);
 
     // ========================================================
-    // STREAMING PIPELINE
+    // FIXED THREAD/BLOCK CONFIG
+    // ========================================================
+    dim3 block2D(THREADS, THREADS);
+
+    dim3 grid2D(
+        (N + THREADS - 1) / THREADS,
+        (N + THREADS - 1) / THREADS
+    );
+
+    dim3 block1D(THREADS);
+
+    dim3 grid1D(NUM_BLOCKS);
+
+    // ========================================================
+    // STREAMING LOOP
     // ========================================================
     for(int c=0;c<chunks;c++){
 
         int cur = c % 2;
-        int next = 1 - cur;
 
         int offset = c * CHUNK;
-        int size = min(CHUNK, M - offset);
 
-        // OPT 1: async H2D transfer (overlap with compute)
-        cudaMemcpyAsync(
+        int size = CHUNK;
+
+        if(offset + size > M){
+            size = M - offset;
+        }
+
+        cudaStream_t stream = (cur == 0) ? s0 : s1;
+
+        // ====================================================
+        // ASYNC COPY
+        // ====================================================
+        CUDA_CHECK(cudaMemcpyAsync(
             d_A[cur],
             &A[offset*N],
             size*N*sizeof(float),
             cudaMemcpyHostToDevice,
-            (c%2==0)?s0:s1
+            stream
+        ));
+
+        // ====================================================
+        // COMPUTE SAME STREAM
+        // ====================================================
+        AtA_kernel<<<grid2D, block2D, 0, stream>>>(
+            d_A[cur],
+            d_AtA,
+            size,
+            N
         );
 
-        // OPT 2: overlap compute of previous chunk
-        if(c > 0){
-
-            dim3 block(TILE,TILE);
-            dim3 grid((N+TILE-1)/TILE,(N+TILE-1)/TILE);
-
-            AtA_kernel<<<grid,block,(c%2==0)?s0:s1>>>(
-                d_A[next],
-                d_AtA,
-                size,
-                N
-            );
-
-            Atb_kernel<<<(N+255)/256,256,(c%2==0)?s0:s1>>>(
-                d_A[next],
-                d_b,
-                d_Atb,
-                size,
-                N
-            );
-        }
+        Atb_kernel<<<grid1D, block1D, 0, stream>>>(
+            d_A[cur],
+            d_b + offset,
+            d_Atb,
+            size,
+            N
+        );
     }
 
-    cudaDeviceSynchronize();
+    CUDA_CHECK(cudaDeviceSynchronize());
 
     // ========================================================
     // COPY BACK
     // ========================================================
-    CUDA_CHECK(cudaMemcpy(AtA,d_AtA,N*N*sizeof(double),cudaMemcpyDeviceToHost));
-    CUDA_CHECK(cudaMemcpy(Atb,d_Atb,N*sizeof(double),cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(
+        AtA,
+        d_AtA,
+        N*N*sizeof(double),
+        cudaMemcpyDeviceToHost
+    ));
 
-    printf("DONE STREAMING PIPELINE\n");
+    CUDA_CHECK(cudaMemcpy(
+        Atb,
+        d_Atb,
+        N*sizeof(double),
+        cudaMemcpyDeviceToHost
+    ));
 
+    printf("DONE\n");
+
+    // ========================================================
+    // CLEANUP
+    // ========================================================
     cudaFree(d_A[0]);
     cudaFree(d_A[1]);
+
     cudaFree(d_b);
+
     cudaFree(d_AtA);
     cudaFree(d_Atb);
 
-    free(A);
-    free(b);
+    cudaFreeHost(A);
+    cudaFreeHost(b);
+
     free(AtA);
     free(Atb);
+
+    cudaStreamDestroy(s0);
+    cudaStreamDestroy(s1);
 
     return 0;
 }
