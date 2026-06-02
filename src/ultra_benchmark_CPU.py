@@ -11,7 +11,7 @@ import os
 # Inserisci qui i percorsi dei tuoi eseguibili C++
 eseguibili = [
     r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final.exe"
-    #r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/least-squares-opt3-2.exe",
+    r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/least-squares-opt3-final.exe",
     #r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/least-squares-opt3-3.exe",
     #r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it2.exe"
 ]
