@@ -201,9 +201,8 @@ int main(int argc, char *argv[]) {
         std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
     const double elapsed_s = elapsed_us.count() * 1e-6;
 
-    std::printf("Tempo sezione parallela: %.6f s  (%lld µs)\n",
-                elapsed_s,
-                static_cast<long long>(elapsed_us.count()));
+    std::printf("Tempo SOLO Parallelo: %.2f s\n",
+                elapsed_s);
 
     if (N >= 3)
         std::printf("Primi 3 valori di x: %f  %f  %f\n", x[0], x[1], x[2]);

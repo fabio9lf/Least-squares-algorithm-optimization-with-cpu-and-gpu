@@ -10,14 +10,14 @@ import os
 # ==========================================
 # Inserisci qui i percorsi dei tuoi eseguibili C++
 eseguibili = [
-    r"C:\Users\giaco\Documents\Computer Architecture\progetto\Least-squares-algorithm-optimization-with-cpu-and-gpu-main\src\least-squares-it1_NC2.exe",
-    r"C:\Users\giaco\Documents\Computer Architecture\progetto\Least-squares-algorithm-optimization-with-cpu-and-gpu-main\src\least-squares-opt3-2(CACHE).exe",
-    r"C:\Users\giaco\Documents\Computer Architecture\progetto\Least-squares-algorithm-optimization-with-cpu-and-gpu-main\src\least-squares-opt3-3(CACHE).exe",
-    r"C:\Users\giaco\Documents\Computer Architecture\progetto\Least-squares-algorithm-optimization-with-cpu-and-gpu-main\src\least-squares-it2(CACHE_FORSE).exe"
+    r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final.exe"
+    #r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/least-squares-opt3-2.exe",
+    #r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/least-squares-opt3-3.exe",
+    #r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it2.exe"
 ]
 
-M = "2000"
-N = "1500"
+M = "4000"
+N = "3000"
 iterazioni = 30 #a 30 per avere un Confidence Interval statisticamente valido
 
 # File di salvataggio sicuro

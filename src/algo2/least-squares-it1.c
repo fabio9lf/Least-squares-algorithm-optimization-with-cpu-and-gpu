@@ -183,7 +183,7 @@ int main(int argc, char *argv[]) {
 
     double elapsed = (te.tv_sec - ts.tv_sec)
                    + (te.tv_nsec - ts.tv_nsec) / 1e9;
-    printf("Tempo sezione parallela: %.6f s\n", elapsed);
+    printf("Tempo SOLO Parallelo: %.2f s\n", elapsed);
     if (N >= 3)
         printf("Primi 3 valori di x: %f, %f, %f\n", x[0], x[1], x[2]);
 
