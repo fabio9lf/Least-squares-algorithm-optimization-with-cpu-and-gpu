@@ -185,7 +185,7 @@ void* qr_worker(void* arg) {
     }
 
     if (tid == 0)
-        printf("Tempo SOLO Parallelo: %.6f s\n", data->timer_ms);
+        printf("Tempo SOLO Parallelo: %.6f ms\n", data->timer_ms);
 
     return NULL;
 }

@@ -10,15 +10,15 @@ import os
 # ==========================================
 # Inserisci qui i percorsi dei tuoi eseguibili C++
 eseguibili = [
-    r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final.exe",
-    r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/least-squares-opt3-final.exe"
+    #r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final.exe",
+    #r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/least-squares-opt3-final.exe",
     #r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/least-squares-opt3-3.exe",
-    #r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it2.exe"
+    r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe"
 ]
 
 M = "4000"
 N = "3000"
-iterazioni = 30 #a 30 per avere un Confidence Interval statisticamente valido
+iterazioni = 1 #a 30 per avere un Confidence Interval statisticamente valido
 
 # File di salvataggio sicuro
 file_output = "risultati_benchmark_cpu.csv"
@@ -61,7 +61,7 @@ for exe in eseguibili:
     print(f"\n>>> TESTANDO ESEGUIBILE: {os.path.basename(exe)}")
     
     # Loop sui Thread: da 1 a 10 inclusi
-    for num_threads in range(1, 11):
+    for num_threads in range(1, 13):
         
         # Controllo anti-crash: test già fatto?
         if (exe, num_threads) in test_fatti:
