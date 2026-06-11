@@ -16,9 +16,9 @@ eseguibili = [
     r"/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe"
 ]
 
-M = "4000"
-N = "3000"
-iterazioni = 1 #a 30 per avere un Confidence Interval statisticamente valido
+M = "2000"
+N = "1500"
+iterazioni = 10 #a 30 per avere un Confidence Interval statisticamente valido
 
 # File di salvataggio sicuro
 file_output = "risultati_benchmark_cpu.csv"

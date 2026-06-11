@@ -1,6 +1,12 @@
 Eseguibile,Num_Threads,Media_ms,CI_95_ms
-/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe,1,30249.475,0.0
-/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe,2,26536.392,0.0
-/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe,3,26340.424,0.0
-/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe,4,26152.075,0.0
-/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe,5,32165.195,0.0
+/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe,1,760.979,7.021
+/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe,2,511.814,14.986
+/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe,3,376.827,35.423
+/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe,4,320.672,23.644
+/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe,5,288.856,23.063
+/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe,6,254.113,9.394
+/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe,7,243.05,11.948
+/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe,8,239.438,9.997
+/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe,9,255.61,8.67
+/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe,10,286.204,58.185
+/mnt/c/universita/Computer Architecture/progetto/Least-squares-algorithm-optimization-with-cpu-ang-gpu/src/algo2/least-squares-it-final2.exe,11,244.998,11.434
